@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#10171f" />
+  <meta name="description" content="本地化的发票与报销整理工作台。" />
+  <title>Ledger · 发票报销台</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%2310171f'/%3E%3Cpath d='M9 7.5h14a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H9A1.5 1.5 0 0 1 7.5 23V9A1.5 1.5 0 0 1 9 7.5Z' fill='%2358d6b4'/%3E%3Cpath d='M11 12h10M11 16h7M11 20h5' stroke='%2310171f' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #10171f;
+      --bg-deep: #0d141b;
+      --surface: #151e28;
+      --surface-2: #1a2631;
+      --surface-3: #243442;
+      --line: rgba(229, 238, 242, 0.1);
+      --line-strong: rgba(229, 238, 242, 0.18);
+      --text: #eef4f2;
+      --text-soft: #b5c4c9;
+      --text-muted: #7f939d;
+      --coral: #ff775c;
+      --coral-soft: #ffae98;
+      --mint: #58d6b4;
+      --yellow: #f0c36d;
+      --blue: #8bb8ff;
+      --purple: #bd9cff;
+      --danger: #ff8c89;
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.2);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--bg); }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 73% -10%, rgba(88, 214, 180, 0.09), transparent 31rem), radial-gradient(circle at 5% 85%, rgba(255, 119, 92, 0.06), transparent 28rem), var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 1.5; letter-spacing: -0.01em; }
+    button, input, select, textarea { font: inherit; }
+    button, select { color: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(88, 214, 180, 0.45); outline-offset: 2px; }
+
+    .app-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { position: sticky; top: 0; display: flex; flex-direction: column; min-height: 100vh; padding: 29px 20px 22px; border-right: 1px solid var(--line); background: rgba(13, 20, 27, 0.76); backdrop-filter: blur(24px); }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px; }
+    .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--mint); box-shadow: 0 8px 24px rgba(88, 214, 180, 0.2); }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-copy strong { display: block; font-size: 15px; letter-spacing: 0.02em; }
+    .brand-copy span { display: block; margin-top: 1px; color: var(--text-muted); font-size: 12px; }
+    .nav-group { margin-top: 52px; }
+    .eyebrow { color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
+    .nav-list { display: grid; gap: 7px; margin-top: 12px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 13px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--text-soft); text-align: left; transition: 180ms ease; }
+    .nav-item:hover { background: rgba(255, 255, 255, 0.045); color: var(--text); }
+    .nav-item.active { border-color: rgba(88, 214, 180, 0.2); background: rgba(88, 214, 180, 0.1); color: var(--text); }
+    .nav-icon { display: grid; flex: 0 0 18px; place-items: center; width: 18px; height: 18px; }
+    .nav-icon svg { width: 18px; height: 18px; stroke: currentColor; }
+    .nav-label { flex: 1; font-size: 14px; font-weight: 600; }
+    .nav-count { color: var(--text-muted); font-size: 12px; }
+    .nav-item.active .nav-count { color: var(--mint); }
+    .sidebar-summary { margin-top: 34px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, rgba(255, 119, 92, 0.08), rgba(255, 255, 255, 0.02)); }
+    .sidebar-summary .summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .sidebar-summary strong { font-size: 13px; }
+    .sidebar-summary .summary-month { color: var(--coral-soft); font-size: 11px; }
+    .sidebar-summary .mini-progress { height: 5px; margin-top: 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+    .sidebar-summary .mini-progress i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--coral); transition: width 240ms ease; }
+    .sidebar-summary p { margin: 9px 0 0; color: var(--text-muted); font-size: 11px; }
+    .sidebar-note { margin-top: auto; padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255, 255, 255, 0.025); }
+    .sidebar-note .note-icon { display: grid; place-items: center; width: 30px; height: 30px; margin-bottom: 10px; border-radius: 9px; background: rgba(240, 195, 109, 0.12); color: var(--yellow); }
+    .sidebar-note strong { display: block; font-size: 13px; }
+    .sidebar-note p { margin: 5px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.55; }
+    .sidebar-footer { display: flex; justify-content: space-between; margin-top: 18px; padding: 0 10px; color: var(--text-muted); font-size: 11px; }
+
+    .main { width: min(1440px, 100%); margin: 0 auto; padding: 28px clamp(22px, 4vw, 62px) 45px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 44px; }
+    .mobile-menu { display: none; place-items: center; width: 39px; height: 39px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.025); color: var(--text-soft); }
+    .mobile-menu svg { width: 18px; height: 18px; stroke: currentColor; }
+    .date-line { display: flex; align-items: center; gap: 9px; color: var(--text-soft); font-size: 14px; }
+    .date-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 5px rgba(88, 214, 180, 0.11); }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .icon-button { display: grid; place-items: center; width: 39px; height: 39px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.025); color: var(--text-soft); transition: 180ms ease; }
+    .icon-button:hover { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.07); color: var(--text); }
+    .icon-button svg { width: 18px; height: 18px; stroke: currentColor; }
+    .profile-chip { display: flex; align-items: center; gap: 9px; padding: 4px 10px 4px 5px; border: 1px solid var(--line); border-radius: 30px; color: var(--text-soft); font-size: 12px; }
+    .avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); color: var(--mint); font-size: 11px; font-weight: 700; }
+
+    .page-intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 46px 0 25px; }
+    .page-intro h1 { margin: 7px 0 0; font-size: clamp(28px, 3vw, 40px); line-height: 1.08; letter-spacing: -0.045em; }
+    .page-intro p { max-width: 530px; margin: 9px 0 0; color: var(--text-muted); font-size: 14px; }
+    .intro-actions { display: flex; align-items: center; gap: 9px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 11px; transition: 180ms ease; }
+    .button svg { width: 16px; height: 16px; stroke: currentColor; }
+    .button-primary { padding: 11px 16px; border: 1px solid rgba(255, 173, 147, 0.25); background: var(--coral); color: #291914; font-size: 13px; font-weight: 800; box-shadow: 0 8px 20px rgba(255, 119, 92, 0.17); }
+    .button-primary:hover { background: #ff886f; box-shadow: 0 11px 25px rgba(255, 119, 92, 0.25); transform: translateY(-1px); }
+    .button-secondary { padding: 10px 13px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.035); color: var(--text-soft); font-size: 13px; }
+    .button-secondary:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+    .button-danger { padding: 10px 13px; border: 1px solid rgba(255, 140, 137, 0.16); background: rgba(255, 140, 137, 0.08); color: var(--danger); font-size: 13px; }
+    .button-danger:hover { background: rgba(255, 140, 137, 0.14); }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
+    .metric-card { position: relative; min-height: 132px; padding: 19px; overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: rgba(21, 30, 40, 0.78); }
+    .metric-card::after { position: absolute; right: -24px; bottom: -40px; width: 112px; height: 112px; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 50%; content: ""; }
+    .metric-top { position: relative; z-index: 1; display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+    .metric-label { color: var(--text-muted); font-size: 12px; }
+    .metric-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: rgba(88, 214, 180, 0.11); color: var(--mint); }
+    .metric-icon.coral { background: rgba(255, 119, 92, 0.11); color: var(--coral-soft); }
+    .metric-icon.yellow { background: rgba(240, 195, 109, 0.11); color: var(--yellow); }
+    .metric-icon.blue { background: rgba(139, 184, 255, 0.11); color: var(--blue); }
+    .metric-icon svg { width: 15px; height: 15px; stroke: currentColor; }
+    .metric-number { position: relative; z-index: 1; margin-top: 12px; font-size: 25px; font-weight: 500; letter-spacing: -0.055em; }
+    .metric-number small { margin-left: 4px; color: var(--text-muted); font-size: 12px; letter-spacing: 0; }
+    .metric-trend { position: relative; z-index: 1; margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+    .metric-trend.good { color: var(--mint); }
+    .metric-trend.warn { color: var(--yellow); }
+
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1.54fr) minmax(286px, 0.7fr); gap: 20px; align-items: start; margin-top: 22px; }
+    .card { border: 1px solid var(--line); border-radius: var(--radius-xl); background: rgba(21, 30, 40, 0.9); box-shadow: var(--shadow); }
+    .table-card { min-width: 0; overflow: hidden; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 22px 23px 0; }
+    .card-header h2 { margin: 0; font-size: 16px; letter-spacing: -0.02em; }
+    .card-header p { margin: 5px 0 0; color: var(--text-muted); font-size: 12px; }
+    .card-header-meta { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+    .table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 21px 23px 0; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+    .status-tabs { display: flex; gap: 5px; overflow-x: auto; }
+    .status-tab { padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+    .status-tab:hover { color: var(--text-soft); }
+    .status-tab.active { background: var(--surface-3); color: var(--text); }
+    .toolbar-actions { display: flex; align-items: center; gap: 8px; }
+    .search-box { display: flex; align-items: center; gap: 7px; min-width: 154px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, 0.03); }
+    .search-box svg { flex: 0 0 auto; width: 15px; height: 15px; stroke: var(--text-muted); }
+    .search-box input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .select { padding: 8px 26px 8px 10px; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: var(--surface-2); color: var(--text-soft); font-size: 12px; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; min-width: 720px; border-collapse: collapse; }
+    th { padding: 13px 11px; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-align: left; white-space: nowrap; }
+    th:first-child, td:first-child { padding-left: 23px; }
+    th:last-child, td:last-child { padding-right: 23px; }
+    td { padding: 14px 11px; border-top: 1px solid rgba(255, 255, 255, 0.055); color: var(--text-soft); font-size: 12px; vertical-align: middle; }
+    tbody tr { transition: background 160ms ease; }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+    tbody tr.selected { background: rgba(88, 214, 180, 0.055); }
+    .check-box { width: 16px; height: 16px; accent-color: var(--mint); cursor: pointer; }
+    .expense-title { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .expense-avatar { display: grid; flex: 0 0 31px; place-items: center; width: 31px; height: 31px; border-radius: 10px; background: rgba(255, 119, 92, 0.11); color: var(--coral-soft); font-size: 11px; font-weight: 800; }
+    .expense-title strong { display: block; overflow: hidden; color: var(--text); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .expense-title span { display: block; margin-top: 2px; color: var(--text-muted); font-size: 11px; }
+    .invoice-info strong { display: block; color: var(--text-soft); font-size: 12px; font-weight: 500; }
+    .invoice-info span { display: block; margin-top: 2px; color: var(--text-muted); font-size: 10px; }
+    .amount { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 7px; font-size: 11px; white-space: nowrap; }
+    .status-pill::before { width: 5px; height: 5px; border-radius: 50%; background: currentColor; content: ""; }
+    .status-draft { background: rgba(255, 255, 255, 0.07); color: var(--text-muted); }
+    .status-review { background: rgba(240, 195, 109, 0.11); color: var(--yellow); }
+    .status-approved { background: rgba(139, 184, 255, 0.11); color: var(--blue); }
+    .status-paid { background: rgba(88, 214, 180, 0.11); color: var(--mint); }
+    .status-rejected { background: rgba(255, 140, 137, 0.11); color: var(--danger); }
+    .row-actions { display: flex; align-items: center; gap: 4px; }
+    .row-action { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); }
+    .row-action:hover { background: var(--surface-3); color: var(--text); }
+    .row-action.delete:hover { background: rgba(255, 140, 137, 0.1); color: var(--danger); }
+    .row-action svg { width: 15px; height: 15px; stroke: currentColor; }
+    .empty-state { padding: 45px 20px; color: var(--text-muted); text-align: center; }
+    .empty-state strong { display: block; color: var(--text-soft); font-size: 14px; }
+    .empty-state span { display: block; margin-top: 5px; font-size: 12px; }
+    .table-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 23px; border-top: 1px solid var(--line); color: var(--text-muted); font-size: 11px; }
+    .selection-actions { display: flex; align-items: center; gap: 8px; }
+    .selection-actions button { padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--text-soft); font-size: 11px; }
+    .selection-actions button:hover { background: var(--surface-3); color: var(--text); }
+
+    .side-column { display: grid; gap: 18px; }
+    .pipeline-card, .reminder-card, .import-card { padding: 22px; }
+    .side-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .side-title h2 { margin: 0; font-size: 15px; }
+    .side-title span { color: var(--text-muted); font-size: 11px; }
+    .pipeline-total { margin-top: 22px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+    .pipeline-total label { color: var(--text-muted); font-size: 11px; }
+    .pipeline-total strong { display: block; margin-top: 5px; color: var(--text); font-size: 28px; font-weight: 500; letter-spacing: -0.06em; }
+    .pipeline-total strong small { margin-left: 4px; color: var(--text-muted); font-size: 12px; letter-spacing: 0; }
+    .pipeline-list { display: grid; gap: 14px; margin-top: 17px; }
+    .pipeline-line { display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: 10px; }
+    .pipeline-line label { color: var(--text-soft); font-size: 12px; }
+    .pipeline-track { height: 7px; border-radius: 20px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+    .pipeline-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--yellow); transition: width 240ms ease; }
+    .pipeline-line:nth-child(2) i { background: var(--blue); }
+    .pipeline-line:nth-child(3) i { background: var(--mint); }
+    .pipeline-line span { min-width: 21px; color: var(--text-muted); font-size: 11px; text-align: right; }
+    .reminder-list { display: grid; gap: 12px; margin-top: 18px; }
+    .reminder-item { display: flex; align-items: start; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255, 255, 255, 0.025); }
+    .reminder-icon { display: grid; flex: 0 0 26px; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(240, 195, 109, 0.11); color: var(--yellow); }
+    .reminder-icon svg { width: 14px; height: 14px; stroke: currentColor; }
+    .reminder-item strong { display: block; color: var(--text-soft); font-size: 12px; font-weight: 600; }
+    .reminder-item span { display: block; margin-top: 2px; color: var(--text-muted); font-size: 11px; }
+    .import-card { background: linear-gradient(145deg, rgba(88, 214, 180, 0.09), rgba(21, 30, 40, 0.9)); }
+    .import-card p { margin: 10px 0 15px; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+    .import-card .button { width: 100%; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 20px; background: rgba(4, 9, 12, 0.7); backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal { width: min(620px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow: auto; border: 1px solid var(--line-strong); border-radius: 22px; background: var(--surface); box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42); transform: translateY(12px); transition: transform 180ms ease; }
+    .modal-backdrop.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; align-items: start; justify-content: space-between; gap: 15px; padding: 23px 24px 0; }
+    .modal-header h2 { margin: 0; font-size: 19px; }
+    .modal-header p { margin: 5px 0 0; color: var(--text-muted); font-size: 12px; }
+    .modal-close { display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--text-muted); }
+    .modal-close:hover { color: var(--text); background: var(--surface-3); }
+    .modal-close svg { width: 16px; height: 16px; stroke: currentColor; }
+    .expense-form { display: grid; gap: 16px; padding: 22px 24px 24px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { color: var(--text-soft); font-size: 12px; font-weight: 600; }
+    .field label em { color: var(--coral); font-style: normal; }
+    .field input, .field select, .field textarea { width: 100%; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: rgba(255, 255, 255, 0.04); color: var(--text); font-size: 13px; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(88, 214, 180, 0.5); box-shadow: 0 0 0 3px rgba(88, 214, 180, 0.08); }
+    .field textarea { min-height: 68px; resize: vertical; }
+    .field input::placeholder, .field textarea::placeholder { color: var(--text-muted); }
+    .field small { color: var(--text-muted); font-size: 10px; }
+    .amount-input { position: relative; }
+    .amount-input span { position: absolute; top: 10px; left: 11px; color: var(--text-muted); font-size: 13px; }
+    .amount-input input { padding-left: 25px; }
+    .invoice-upload { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 11px; border: 1px dashed var(--line-strong); border-radius: 9px; color: var(--text-muted); font-size: 11px; }
+    .invoice-upload button { padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--text-soft); font-size: 11px; }
+    .invoice-upload button:hover { background: var(--surface-3); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+
+    .toast { position: fixed; right: 25px; bottom: 25px; z-index: 60; display: flex; align-items: center; gap: 9px; max-width: min(370px, calc(100vw - 35px)); padding: 12px 15px; border: 1px solid rgba(88, 214, 180, 0.28); border-radius: 12px; background: #1e302f; box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25); color: var(--text); font-size: 13px; opacity: 0; pointer-events: none; transform: translateY(10px); transition: 220ms ease; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+    .toast svg { flex: 0 0 auto; width: 16px; height: 16px; stroke: var(--mint); }
+    .print-sheet { display: none; }
+
+    @media print {
+      @page { size: A4; margin: 16mm; }
+      body { background: #fff; color: #17242a; }
+      .app-shell, .modal-backdrop, .toast { display: none !important; }
+      .print-sheet { display: block; color: #17242a; }
+      .print-head { display: flex; align-items: start; justify-content: space-between; padding-bottom: 18px; border-bottom: 2px solid #17242a; }
+      .print-head h1 { margin: 0; font-size: 25px; }
+      .print-head p { margin: 4px 0 0; color: #63747a; font-size: 11px; }
+      .print-meta { text-align: right; color: #63747a; font-size: 11px; }
+      .print-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+      .print-summary div { padding: 11px; border: 1px solid #d7e0e1; border-radius: 8px; }
+      .print-summary span { display: block; color: #63747a; font-size: 10px; }
+      .print-summary strong { display: block; margin-top: 4px; font-size: 16px; }
+      .print-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+      .print-table th, .print-table td { padding: 8px 6px; border-bottom: 1px solid #d7e0e1; text-align: left; }
+      .print-table th { color: #63747a; font-weight: 600; }
+      .print-foot { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-top: 55px; color: #63747a; font-size: 11px; }
+      .print-foot div { padding-top: 9px; border-top: 1px solid #aab7ba; }
+    }
+
+    @media (max-width: 1160px) {
+      .app-shell { grid-template-columns: 208px minmax(0, 1fr); }
+      .content-grid { grid-template-columns: minmax(0, 1fr); }
+      .side-column { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+      .import-card { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 820px) {
+      .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side-column { grid-template-columns: 1fr 1fr; }
+      .import-card { grid-column: 1 / -1; }
+      .page-intro { align-items: start; flex-direction: column; }
+    }
+
+    @media (max-width: 690px) {
+      .app-shell { display: block; }
+      .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 20; width: min(280px, 86vw); padding-top: 24px; box-shadow: 24px 0 65px rgba(0, 0, 0, 0.34); transform: translateX(-105%); transition: transform 220ms ease; }
+      .sidebar.open { transform: translateX(0); }
+      .mobile-menu { display: grid; }
+      .main { padding: 19px 15px 32px; }
+      .date-dot { display: none; }
+      .date-line { font-size: 13px; }
+      .profile-chip { display: none; }
+      .page-intro { margin: 31px 0 21px; }
+      .page-intro h1 { font-size: 31px; }
+      .intro-actions { width: 100%; }
+      .intro-actions .button { flex: 1; }
+      .metrics-grid { gap: 10px; }
+      .metric-card { min-height: 118px; padding: 16px; }
+      .content-grid { margin-top: 17px; }
+      .table-toolbar { align-items: stretch; flex-direction: column; margin: 18px 15px 0; }
+      .toolbar-actions { width: 100%; }
+      .search-box { flex: 1; }
+      .card-header { padding: 19px 15px 0; }
+      th:first-child, td:first-child { padding-left: 15px; }
+      th:last-child, td:last-child { padding-right: 15px; }
+      .table-footer { padding: 12px 15px; }
+      .side-column { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="主导航">
+      <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6.8 4.5h10.4A1.8 1.8 0 0 1 19 6.3v11.4a1.8 1.8 0 0 1-1.8 1.8H6.8A1.8 1.8 0 0 1 5 17.7V6.3a1.8 1.8 0 0 1 1.8-1.8Z" fill="#163b35"/><path d="M8.5 9h7M8.5 12h5M8.5 15h3" stroke="#58d6b4" stroke-width="1.7" stroke-linecap="round"/></svg></div><div class="brand-copy"><strong>Ledger</strong><span>发票报销工作台</span></div></div>
+      <div class="nav-group"><div class="eyebrow">Workspace</div><nav class="nav-list">
+        <button class="nav-item active" data-target="overview"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1.3"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.3"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.3"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.3"/></svg></span><span class="nav-label">报销总览</span><span class="nav-count" id="navAllCount">0</span></button>
+        <button class="nav-item" data-target="expenseTable"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M5 5.5h14v13H5zM8 9h8M8 12h8M8 15h5"/></svg></span><span class="nav-label">费用明细</span><span class="nav-count" id="navPendingCount">0</span></button>
+        <button class="nav-item" data-target="pipelineCard"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="12" r="2.5"/></svg></span><span class="nav-label">报销流程</span></button>
+        <button class="nav-item" data-target="importCard"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg></span><span class="nav-label">导入数据</span></button>
+      </nav></div>
+      <div class="sidebar-summary"><div class="summary-head"><strong>本月报销进度</strong><span class="summary-month" id="sidebarMonth">2026.09</span></div><div class="mini-progress"><i id="sidebarProgress"></i></div><p id="sidebarProgressText">已报销 ¥0 / ¥0</p></div>
+      <div class="sidebar-note"><div class="note-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="16" height="16"><path d="M12 3.5 19 7v5.5c0 4.2-2.9 7.2-7 8-4.1-.8-7-3.8-7-8V7l7-3.5Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg></div><strong>资料留在本地</strong><p>所有记录保存在当前浏览器中，适合个人整理和打印归档。</p></div>
+      <div class="sidebar-footer"><span>本地保存</span><span>v1.0</span></div>
+    </aside>
+
+    <main class="main" id="overview">
+      <header class="topbar"><div style="display:flex;align-items:center;gap:12px;"><button class="mobile-menu" id="mobileMenu" aria-label="打开菜单"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="date-line"><span class="date-dot" aria-hidden="true"></span><span id="currentDate">星期一，9 月 21 日</span></div></div><div class="top-actions"><button class="icon-button" id="themeToggle" aria-label="切换界面主题" title="切换主题"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg></button><div class="profile-chip"><span class="avatar">LT</span><span>财务整理员</span></div></div></header>
+
+      <section class="page-intro"><div><div class="eyebrow">Expense workspace</div><h1>把每一笔，都整理清楚。</h1><p>集中管理发票、费用和报销进度，月底不再翻聊天记录找金额。</p></div><div class="intro-actions"><button class="button button-secondary" id="importButton"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg><span>导入 CSV</span></button><button class="button button-secondary" id="printButton"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M6 9V4h12v5M6 17H4.5A1.5 1.5 0 0 1 3 15.5v-4A1.5 1.5 0 0 1 4.5 10h15a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5H18M6 14h12v6H6z"/></svg><span>打印报销单</span></button><button class="button button-primary" id="addButton"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span>新增费用</span></button></div></section>
+
+      <section class="metrics-grid" aria-label="本月概览"><article class="metric-card"><div class="metric-top"><span class="metric-label">本月费用总额</span><span class="metric-icon coral"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v18M16 7.5c0-1.7-1.5-2.8-4-2.8s-4 1.1-4 2.8c0 4.6 8 2.4 8 6.7 0 1.8-1.5 3-4 3s-4-1.2-4-3"/></svg></span></div><div class="metric-number" id="metricTotal">¥0</div><div class="metric-trend" id="metricTotalTrend">本月共 0 笔费用</div></article><article class="metric-card"><div class="metric-top"><span class="metric-label">待报销金额</span><span class="metric-icon yellow"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg></span></div><div class="metric-number" id="metricPending">¥0</div><div class="metric-trend warn" id="metricPendingTrend">等待处理</div></article><article class="metric-card"><div class="metric-top"><span class="metric-label">已报销金额</span><span class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="m5 12 4.5 4.5L19 7"/></svg></span></div><div class="metric-number" id="metricPaid">¥0</div><div class="metric-trend good" id="metricPaidTrend">完成率 0%</div></article><article class="metric-card"><div class="metric-top"><span class="metric-label">待补资料</span><span class="metric-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 8v4M12 16h.01"/><path d="M10.3 3.9 3.9 15a2 2 0 0 0 1.7 3h12.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span></div><div class="metric-number" id="metricMissing">0<small>笔</small></div><div class="metric-trend" id="metricMissingTrend">发票信息完整</div></article></section>
+
+      <section class="content-grid"><article class="card table-card" id="expenseTable"><div class="card-header"><div><h2>费用明细</h2><p>按月份整理每一笔可追踪的支出</p></div><span class="card-header-meta" id="tableMeta">0 笔记录</span></div><div class="table-toolbar"><div class="status-tabs" role="tablist"><button class="status-tab active" data-status="all">全部 <span id="tabAll">0</span></button><button class="status-tab" data-status="待提交">待提交 <span id="tabDraft">0</span></button><button class="status-tab" data-status="审核中">审核中 <span id="tabReview">0</span></button><button class="status-tab" data-status="已通过">已通过 <span id="tabApproved">0</span></button><button class="status-tab" data-status="已报销">已报销 <span id="tabPaid">0</span></button></div><div class="toolbar-actions"><label class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="searchInput" type="search" placeholder="搜索商户、项目…" aria-label="搜索费用" /></label><select class="select" id="monthFilter" aria-label="选择月份"></select></div></div><div class="table-wrap"><table><thead><tr><th><input class="check-box" id="selectAll" type="checkbox" aria-label="选择全部费用" /></th><th>费用项目</th><th>发票信息</th><th>日期</th><th>金额</th><th>状态</th><th>操作</th></tr></thead><tbody id="expenseTableBody"></tbody></table></div><div class="table-footer"><span id="selectionText">选择费用后可批量处理</span><div class="selection-actions"><button id="batchApprove">批量标记已通过</button><button id="exportButton">导出 CSV</button></div></div></article>
+
+        <aside class="side-column"><article class="card pipeline-card" id="pipelineCard"><div class="side-title"><h2>报销流程</h2><span id="pipelineMonth">本月</span></div><div class="pipeline-total"><label>尚未完成报销</label><strong id="pipelinePending">¥0<small>元</small></strong></div><div class="pipeline-list"><div class="pipeline-line"><label>待提交</label><div class="pipeline-track"><i id="barDraft"></i></div><span id="countDraft">0</span></div><div class="pipeline-line"><label>审核中</label><div class="pipeline-track"><i id="barReview"></i></div><span id="countReview">0</span></div><div class="pipeline-line"><label>已完成</label><div class="pipeline-track"><i id="barPaid"></i></div><span id="countPaid">0</span></div></div></article><article class="card reminder-card"><div class="side-title"><h2>处理提醒</h2><span>实时更新</span></div><div class="reminder-list" id="reminderList"></div></article><article class="card import-card" id="importCard"><div class="side-title"><h2>批量整理</h2><span>CSV</span></div><p>如果已有 Excel 或账单记录，可以按模板导出为 CSV 后一次性导入。</p><button class="button button-secondary" id="downloadTemplate"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg><span>下载导入模板</span></button></article></aside>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="expenseModal" aria-hidden="true"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><header class="modal-header"><div><h2 id="modalTitle">新增费用</h2><p>把发票上的关键信息记录下来，之后更容易核对。</p></div><button class="modal-close" id="closeModal" aria-label="关闭弹窗"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><form class="expense-form" id="expenseForm"><input id="expenseId" type="hidden" /><div class="form-grid"><div class="field"><label for="merchant">商户 / 收款方 <em>*</em></label><input id="merchant" required maxlength="60" placeholder="例如：滴滴出行" /></div><div class="field"><label for="amount">金额 <em>*</em></label><div class="amount-input"><span>¥</span><input id="amount" required inputmode="decimal" type="number" min="0.01" step="0.01" placeholder="0.00" /></div></div><div class="field"><label for="category">费用类别 <em>*</em></label><select id="category" required><option value="差旅交通">差旅交通</option><option value="餐饮招待">餐饮招待</option><option value="办公用品">办公用品</option><option value="软件服务">软件服务</option><option value="市场活动">市场活动</option><option value="其他">其他</option></select></div><div class="field"><label for="date">发生日期 <em>*</em></label><input id="date" required type="date" /></div><div class="field"><label for="project">所属项目</label><input id="project" maxlength="50" placeholder="例如：Q3 品牌升级" /></div><div class="field"><label for="status">报销状态</label><select id="status"><option value="待提交">待提交</option><option value="审核中">审核中</option><option value="已通过">已通过</option><option value="已报销">已报销</option><option value="已驳回">已驳回</option></select></div><div class="field"><label for="invoiceNo">发票号码</label><input id="invoiceNo" maxlength="30" placeholder="选填，便于后续核验" /></div><div class="field"><label for="invoiceType">发票类型</label><select id="invoiceType"><option value="增值税普通发票">增值税普通发票</option><option value="增值税专用发票">增值税专用发票</option><option value="电子收据">电子收据</option><option value="暂无发票">暂无发票</option></select></div><div class="field full"><label for="note">备注</label><textarea id="note" maxlength="200" placeholder="记录用途、同行人或需要补充的说明…"></textarea></div><div class="field full"><label>发票附件</label><div class="invoice-upload"><span id="fileName">暂未选择文件（仅记录文件名）</span><button type="button" id="fileButton">选择文件</button><input id="fileInput" type="file" accept="image/*,.pdf" hidden /></div><small>当前为本地整理工具，不会上传附件；这里只保存文件名。</small></div></div><div class="modal-actions"><button class="button button-secondary" type="button" id="cancelModal">取消</button><button class="button button-primary" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="m5 12 4.5 4.5L19 7"/></svg><span>保存费用</span></button></div></form></section></div>
+  <input id="csvInput" type="file" accept=".csv,text/csv" hidden />
+  <div class="toast" id="toast" role="status" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="m5 12 4.5 4.5L19 7"/></svg><span id="toastText"></span></div>
+  <section class="print-sheet" id="printSheet"></section>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'ledger-expense-state-v1';
+      const STATUS = ['待提交', '审核中', '已通过', '已报销', '已驳回'];
+      const CATEGORIES = ['差旅交通', '餐饮招待', '办公用品', '软件服务', '市场活动', '其他'];
+      const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      const monthNames = ['1 月', '2 月', '3 月', '4 月', '5 月', '6 月', '7 月', '8 月', '9 月', '10 月', '11 月', '12 月'];
+      const $ = (selector) => document.querySelector(selector);
+      const $$ = (selector) => [...document.querySelectorAll(selector)];
+      const today = new Date();
+      const localDateKey = (date = new Date()) => { const y = date.getFullYear(); const m = String(date.getMonth() + 1).padStart(2, '0'); const d = String(date.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; };
+      const currentMonth = localDateKey().slice(0, 7);
+      const seedDate = (daysAgo) => { const date = new Date(); date.setDate(date.getDate() - daysAgo); return localDateKey(date); };
+      const seedExpenses = [
+        { id: 'EXP-001', merchant: '滴滴出行', amount: 268, category: '差旅交通', date: seedDate(2), project: 'Q3 客户拜访', status: '待提交', invoiceNo: '2446 5801 0277', invoiceType: '电子收据', note: '往返虹桥火车站', fileName: '' },
+        { id: 'EXP-002', merchant: '全季酒店', amount: 658, category: '差旅交通', date: seedDate(4), project: 'Q3 客户拜访', status: '审核中', invoiceNo: '0612 8839 4120', invoiceType: '增值税普通发票', note: '客户拜访住宿 1 晚', fileName: 'hotel-invoice.pdf' },
+        { id: 'EXP-003', merchant: '飞书', amount: 1299, category: '软件服务', date: seedDate(8), project: '团队协作', status: '已报销', invoiceNo: '0312 0048 9182', invoiceType: '增值税专用发票', note: '年度专业版订阅', fileName: 'feishu-2026.pdf' },
+        { id: 'EXP-004', merchant: 'MUJI 无印良品', amount: 186.5, category: '办公用品', date: seedDate(11), project: '办公室运营', status: '已通过', invoiceNo: '', invoiceType: '暂无发票', note: '会议室收纳用品', fileName: '' },
+        { id: 'EXP-005', merchant: '星巴克', amount: 96, category: '餐饮招待', date: seedDate(14), project: 'Q3 客户拜访', status: '已驳回', invoiceNo: '0448 9021 6612', invoiceType: '电子收据', note: '缺少参与人信息', fileName: 'coffee.png' },
+        { id: 'EXP-006', merchant: '顺丰速运', amount: 42, category: '其他', date: seedDate(18), project: '办公室运营', status: '已报销', invoiceNo: '0448 9088 1120', invoiceType: '增值税普通发票', note: '寄送合同文件', fileName: 'sf-invoice.pdf' }
+      ];
+      const defaultState = { expenses: seedExpenses, theme: 'dark' };
+      const state = loadState();
+      let activeStatus = 'all';
+      let searchTerm = '';
+      let selectedIds = new Set();
+      let editingId = null;
+      let toastTimer = null;
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+          return { ...defaultState, ...saved, expenses: Array.isArray(saved?.expenses) ? saved.expenses : seedExpenses.map(item => ({ ...item })) };
+        } catch (_) { return { ...defaultState, expenses: seedExpenses.map(item => ({ ...item })) }; }
+      }
+      function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function money(value) { return `¥${Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
+      function shortMoney(value) { return `¥${Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`; }
+      function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
+      function formatDate(dateString) { if (!dateString) return '—'; const date = new Date(`${dateString}T12:00:00`); return `${date.getMonth() + 1} 月 ${date.getDate()} 日`; }
+      function monthLabel(month) { const [year, value] = month.split('-'); return `${year} 年 ${Number(value)} 月`; }
+      function initials(name) { return String(name || '费用').trim().slice(0, 1).toUpperCase(); }
+      function statusClass(status) { return ({ '待提交': 'status-draft', '审核中': 'status-review', '已通过': 'status-approved', '已报销': 'status-paid', '已驳回': 'status-rejected' })[status] || 'status-draft'; }
+      function expensesInMonth(month = $('#monthFilter').value || currentMonth) { return state.expenses.filter(item => String(item.date || '').slice(0, 7) === month); }
+      function filteredExpenses() { const monthItems = expensesInMonth(); const query = searchTerm.trim().toLowerCase(); return monthItems.filter(item => { const statusMatch = activeStatus === 'all' || item.status === activeStatus; const queryMatch = !query || [item.merchant, item.project, item.category, item.invoiceNo, item.note].join(' ').toLowerCase().includes(query); return statusMatch && queryMatch; }); }
+
+      function renderDate() { $('#currentDate').textContent = `${dayNames[today.getDay()] }，${monthNames[today.getMonth()]} ${today.getDate()} 日`; }
+      function renderMonthOptions() {
+        const months = new Set([currentMonth, ...state.expenses.map(item => String(item.date || '').slice(0, 7)).filter(Boolean)]);
+        $('#monthFilter').innerHTML = [...months].sort().reverse().map(month => `<option value="${month}">${monthLabel(month)}</option>`).join('');
+        $('#monthFilter').value = currentMonth;
+      }
+
+      function renderMetrics() {
+        const items = expensesInMonth();
+        const total = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        const paid = items.filter(item => item.status === '已报销').reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        const pending = total - paid;
+        const missing = items.filter(item => !item.invoiceNo || item.invoiceType === '暂无发票').length;
+        const rate = total ? Math.round((paid / total) * 100) : 0;
+        $('#metricTotal').textContent = money(total);
+        $('#metricTotalTrend').textContent = `本月共 ${items.length} 笔费用`;
+        $('#metricPending').textContent = money(pending);
+        $('#metricPendingTrend').textContent = pending ? `${items.filter(item => item.status !== '已报销').length} 笔等待处理` : '本月已全部完成';
+        $('#metricPaid').textContent = money(paid);
+        $('#metricPaidTrend').textContent = `完成率 ${rate}%`;
+        $('#metricMissing').innerHTML = `${missing}<small>笔</small>`;
+        $('#metricMissingTrend').textContent = missing ? '需要补充发票信息' : '发票信息完整';
+        $('#navAllCount').textContent = items.length;
+        $('#navPendingCount').textContent = items.filter(item => item.status !== '已报销').length;
+        $('#sidebarMonth').textContent = ($('#monthFilter').value || currentMonth).replace('-', '.');
+        $('#sidebarProgress').style.width = `${rate}%`;
+        $('#sidebarProgressText').textContent = `已报销 ${money(paid)} / ${money(total)}`;
+      }
+
+      function renderTabs() {
+        const items = expensesInMonth();
+        const counts = { all: items.length, '待提交': 0, '审核中': 0, '已通过': 0, '已报销': 0 };
+        items.forEach(item => { if (counts[item.status] !== undefined) counts[item.status] += 1; });
+        $('#tabAll').textContent = counts.all; $('#tabDraft').textContent = counts['待提交']; $('#tabReview').textContent = counts['审核中']; $('#tabApproved').textContent = counts['已通过']; $('#tabPaid').textContent = counts['已报销'];
+        $$('.status-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.status === activeStatus));
+      }
+
+      function renderTable() {
+        const items = filteredExpenses();
+        const body = $('#expenseTableBody');
+        $('#tableMeta').textContent = `${items.length} 笔记录`;
+        $('#selectAll').checked = items.length > 0 && items.every(item => selectedIds.has(item.id));
+        if (!items.length) { body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><strong>这个筛选条件下还没有费用</strong><span>可以尝试切换月份、状态，或新增一笔费用。</span></div></td></tr>'; return; }
+        body.innerHTML = items.map(item => `<tr class="${selectedIds.has(item.id) ? 'selected' : ''}" data-id="${escapeHtml(item.id)}"><td><input class="check-box row-check" type="checkbox" ${selectedIds.has(item.id) ? 'checked' : ''} aria-label="选择 ${escapeHtml(item.merchant)}" /></td><td><div class="expense-title"><span class="expense-avatar">${escapeHtml(initials(item.merchant))}</span><div><strong title="${escapeHtml(item.merchant)}">${escapeHtml(item.merchant)}</strong><span>${escapeHtml(item.category)} · ${escapeHtml(item.project || '未分配项目')}</span></div></div></td><td><div class="invoice-info"><strong>${escapeHtml(item.invoiceNo || '暂无号码')}</strong><span>${escapeHtml(item.invoiceType || '未填写')}</span></div></td><td>${formatDate(item.date)}</td><td class="amount">${money(item.amount)}</td><td><span class="status-pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span></td><td><div class="row-actions"><button class="row-action edit" title="编辑费用" aria-label="编辑 ${escapeHtml(item.merchant)}"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="m4 16.5-.7 3.7 3.7-.7L18.5 8a2.1 2.1 0 0 0-3-3L4 16.5Z"/><path d="m14 6 3 3"/></svg></button><button class="row-action delete" title="删除费用" aria-label="删除 ${escapeHtml(item.merchant)}"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M5 7h14M10 11v6M14 11v6M7 7l.8 12h8.4L17 7M9 7l.8-2h4.4l.8 2"/></svg></button></div></td></tr>`).join('');
+      }
+
+      function renderPipeline() {
+        const items = expensesInMonth();
+        const pending = items.filter(item => item.status !== '已报销').reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        const counts = { '待提交': 0, '审核中': 0, '已报销': 0 };
+        items.forEach(item => { if (counts[item.status] !== undefined) counts[item.status] += 1; });
+        const total = Math.max(items.length, 1);
+        $('#pipelineMonth').textContent = monthLabel($('#monthFilter').value || currentMonth).replace(' 年 ', '.').replace(' 月', '');
+        $('#pipelinePending').innerHTML = `${shortMoney(pending)}<small>元</small>`;
+        $('#countDraft').textContent = counts['待提交']; $('#countReview').textContent = counts['审核中']; $('#countPaid').textContent = counts['已报销'];
+        $('#barDraft').style.width = `${(counts['待提交'] / total) * 100}%`; $('#barReview').style.width = `${(counts['审核中'] / total) * 100}%`; $('#barPaid').style.width = `${(counts['已报销'] / total) * 100}%`;
+      }
+
+      function renderReminders() {
+        const items = expensesInMonth();
+        const missing = items.filter(item => !item.invoiceNo || item.invoiceType === '暂无发票');
+        const rejected = items.filter(item => item.status === '已驳回');
+        const waiting = items.filter(item => item.status === '待提交');
+        const reminders = [];
+        if (missing.length) reminders.push({ icon: '!', title: `${missing.length} 笔费用缺少发票信息`, detail: '建议补充号码或附件，避免审核退回。' });
+        if (rejected.length) reminders.push({ icon: '↺', title: `${rejected.length} 笔费用需要重新处理`, detail: rejected.map(item => item.merchant).join('、') });
+        if (waiting.length) reminders.push({ icon: '→', title: `${waiting.length} 笔费用尚未提交`, detail: '确认信息无误后可批量标记为已通过。' });
+        if (!reminders.length) reminders.push({ icon: '✓', title: '当前没有待处理提醒', detail: '资料状态很清楚，可以安心归档。' });
+        $('#reminderList').innerHTML = reminders.slice(0, 3).map(item => `<div class="reminder-item"><div class="reminder-icon"><span style="font-weight:800;font-size:12px;">${item.icon}</span></div><div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail)}</span></div></div>`).join('');
+      }
+
+      function renderAll() { renderMetrics(); renderTabs(); renderTable(); renderPipeline(); renderReminders(); }
+
+      function resetForm(item = null) {
+        editingId = item?.id || null;
+        $('#modalTitle').textContent = item ? '编辑费用' : '新增费用';
+        $('#expenseId').value = item?.id || '';
+        $('#merchant').value = item?.merchant || '';
+        $('#amount').value = item?.amount ?? '';
+        $('#category').value = item?.category || '差旅交通';
+        $('#date').value = item?.date || localDateKey();
+        $('#project').value = item?.project || '';
+        $('#status').value = item?.status || '待提交';
+        $('#invoiceNo').value = item?.invoiceNo || '';
+        $('#invoiceType').value = item?.invoiceType || '增值税普通发票';
+        $('#note').value = item?.note || '';
+        $('#fileName').textContent = item?.fileName || '暂未选择文件（仅记录文件名）';
+      }
+      function openModal(item = null) { resetForm(item); $('#expenseModal').classList.add('open'); $('#expenseModal').setAttribute('aria-hidden', 'false'); window.setTimeout(() => $('#merchant').focus(), 60); }
+      function closeModal() { $('#expenseModal').classList.remove('open'); $('#expenseModal').setAttribute('aria-hidden', 'true'); }
+
+      function saveExpense(event) {
+        event.preventDefault();
+        const expense = { id: editingId || `EXP-${Date.now().toString().slice(-6)}`, merchant: $('#merchant').value.trim(), amount: Number($('#amount').value), category: $('#category').value, date: $('#date').value, project: $('#project').value.trim(), status: $('#status').value, invoiceNo: $('#invoiceNo').value.trim(), invoiceType: $('#invoiceType').value, note: $('#note').value.trim(), fileName: $('#fileName').dataset.fileName || (editingId ? (state.expenses.find(item => item.id === editingId)?.fileName || '') : '') };
+        if (!expense.merchant || !expense.amount || !expense.date) return;
+        const index = state.expenses.findIndex(item => item.id === expense.id);
+        if (index >= 0) state.expenses[index] = expense; else state.expenses.unshift(expense);
+        saveState(); renderMonthOptions(); $('#monthFilter').value = expense.date.slice(0, 7); closeModal(); renderAll(); showToast(index >= 0 ? '费用信息已更新' : '费用已添加');
+      }
+
+      function deleteExpense(id) { const item = state.expenses.find(expense => expense.id === id); if (!item) return; if (!window.confirm(`确认删除「${item.merchant}」这笔费用吗？`)) return; state.expenses = state.expenses.filter(expense => expense.id !== id); selectedIds.delete(id); saveState(); renderMonthOptions(); renderAll(); showToast('费用已删除'); }
+      function updateStatus(id, status) { const item = state.expenses.find(expense => expense.id === id); if (!item) return; item.status = status; saveState(); renderAll(); showToast(`已更新为：${status}`); }
+      function toggleSelected(id, checked) { if (checked) selectedIds.add(id); else selectedIds.delete(id); renderTable(); updateSelectionText(); }
+      function updateSelectionText() { $('#selectionText').textContent = selectedIds.size ? `已选择 ${selectedIds.size} 笔费用` : '选择费用后可批量处理'; }
+      function batchApprove() { if (!selectedIds.size) { showToast('请先选择要处理的费用'); return; } state.expenses.forEach(item => { if (selectedIds.has(item.id) && item.status !== '已报销') item.status = '已通过'; }); selectedIds.clear(); saveState(); renderAll(); updateSelectionText(); showToast('已批量标记为已通过'); }
+
+      function csvCell(value) { const text = String(value ?? ''); return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text; }
+      function exportCsv(items = expensesInMonth()) { const header = ['费用编号', '商户', '金额', '类别', '日期', '项目', '状态', '发票号码', '发票类型', '备注']; const rows = items.map(item => [item.id, item.merchant, item.amount, item.category, item.date, item.project, item.status, item.invoiceNo, item.invoiceType, item.note]); const csv = '\ufeff' + [header, ...rows].map(row => row.map(csvCell).join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `Ledger-费用明细-${$('#monthFilter').value || currentMonth}.csv`; link.click(); URL.revokeObjectURL(url); showToast(`已导出 ${items.length} 笔费用`); }
+      function parseCsvLine(line) { const cells = []; let cell = ''; let quoted = false; for (let index = 0; index < line.length; index += 1) { const char = line[index]; const next = line[index + 1]; if (char === '"' && quoted && next === '"') { cell += '"'; index += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { cells.push(cell.trim()); cell = ''; } else cell += char; } cells.push(cell.trim()); return cells; }
+      function parseCsv(text) { return text.replace(/^\ufeff/, '').split(/\r?\n/).filter(line => line.trim()).map(parseCsvLine); }
+      function importCsv(file) { const reader = new FileReader(); reader.onload = () => { try { const rows = parseCsv(String(reader.result || '')); if (rows.length < 2) throw new Error('empty'); const header = rows[0].map(item => item.trim()); const indexOf = (...names) => names.map(name => header.indexOf(name)).find(index => index >= 0) ?? -1; const indexes = { id: indexOf('费用编号', '编号'), merchant: indexOf('商户', '收款方'), amount: indexOf('金额'), category: indexOf('类别', '费用类别'), date: indexOf('日期', '发生日期'), project: indexOf('项目', '所属项目'), status: indexOf('状态', '报销状态'), invoiceNo: indexOf('发票号码'), invoiceType: indexOf('发票类型'), note: indexOf('备注') }; const imported = rows.slice(1).map((row, i) => ({ id: row[indexes.id] || `IMP-${Date.now()}-${i}`, merchant: row[indexes.merchant] || '未命名商户', amount: Number(row[indexes.amount] || 0), category: CATEGORIES.includes(row[indexes.category]) ? row[indexes.category] : '其他', date: row[indexes.date] || localDateKey(), project: row[indexes.project] || '', status: STATUS.includes(row[indexes.status]) ? row[indexes.status] : '待提交', invoiceNo: row[indexes.invoiceNo] || '', invoiceType: row[indexes.invoiceType] || '暂无发票', note: row[indexes.note] || '', fileName: '' })).filter(item => item.amount > 0); if (!imported.length) throw new Error('empty'); state.expenses = [...imported, ...state.expenses]; saveState(); renderMonthOptions(); renderAll(); showToast(`已导入 ${imported.length} 笔费用`); } catch (_) { showToast('CSV 格式无法识别，请先下载模板查看列名'); } }; reader.readAsText(file, 'UTF-8'); }
+      function downloadTemplate() { const header = ['费用编号', '商户', '金额', '类别', '日期', '项目', '状态', '发票号码', '发票类型', '备注']; const example = ['EXP-EXAMPLE', '示例商户', '128.50', '办公用品', localDateKey(), '示例项目', '待提交', '1234567890', '增值税普通发票', '示例备注']; const csv = '\ufeff' + [header, example].map(row => row.map(csvCell).join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'Ledger-费用导入模板.csv'; link.click(); URL.revokeObjectURL(url); showToast('导入模板已下载'); }
+
+      function renderPrintSheet() { const items = expensesInMonth(); const total = items.reduce((sum, item) => sum + Number(item.amount || 0), 0); const pending = items.filter(item => item.status !== '已报销').reduce((sum, item) => sum + Number(item.amount || 0), 0); $('#printSheet').innerHTML = `<div class="print-head"><div><h1>费用报销明细单</h1><p>Ledger · 发票报销工作台</p></div><div class="print-meta">统计月份：${monthLabel($('#monthFilter').value || currentMonth)}<br>打印时间：${new Date().toLocaleString('zh-CN')}</div></div><div class="print-summary"><div><span>费用笔数</span><strong>${items.length} 笔</strong></div><div><span>费用总额</span><strong>${money(total)}</strong></div><div><span>待报销金额</span><strong>${money(pending)}</strong></div></div><table class="print-table"><thead><tr><th>商户 / 项目</th><th>类别</th><th>发生日期</th><th>发票号码</th><th>状态</th><th>金额</th></tr></thead><tbody>${items.map(item => `<tr><td>${escapeHtml(item.merchant)}${item.project ? ` / ${escapeHtml(item.project)}` : ''}</td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.invoiceNo || '暂无')}</td><td>${escapeHtml(item.status)}</td><td>${money(item.amount)}</td></tr>`).join('')}</tbody></table><div class="print-foot"><div>申请人签字</div><div>部门负责人</div><div>财务审核</div></div>`; }
+      function printReport() { renderPrintSheet(); window.print(); }
+      function applyTheme() { const light = state.theme === 'light'; if (light) { document.documentElement.style.setProperty('--bg', '#eef3f1'); document.documentElement.style.setProperty('--bg-deep', '#f7faf9'); document.documentElement.style.setProperty('--surface', '#ffffff'); document.documentElement.style.setProperty('--surface-2', '#f1f6f4'); document.documentElement.style.setProperty('--surface-3', '#e5efeb'); document.documentElement.style.setProperty('--line', 'rgba(22, 45, 52, 0.12)'); document.documentElement.style.setProperty('--line-strong', 'rgba(22, 45, 52, 0.22)'); document.documentElement.style.setProperty('--text', '#14252b'); document.documentElement.style.setProperty('--text-soft', '#4a626a'); document.documentElement.style.setProperty('--text-muted', '#71858b'); document.documentElement.style.setProperty('--shadow', '0 24px 70px rgba(38, 72, 76, 0.1)'); $('#themeIcon').innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/>'; } else { document.documentElement.style.cssText = ''; $('#themeIcon').innerHTML = '<path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/>'; } }
+      let toastTimeout;
+      function showToast(message) { $('#toastText').textContent = message; $('#toast').classList.add('visible'); clearTimeout(toastTimeout); toastTimeout = window.setTimeout(() => $('#toast').classList.remove('visible'), 2600); }
+
+      function bindEvents() {
+        $('#addButton').addEventListener('click', () => openModal()); $('#closeModal').addEventListener('click', closeModal); $('#cancelModal').addEventListener('click', closeModal); $('#expenseForm').addEventListener('submit', saveExpense); $('#expenseModal').addEventListener('click', event => { if (event.target === $('#expenseModal')) closeModal(); });
+        $('#fileButton').addEventListener('click', () => $('#fileInput').click()); $('#fileInput').addEventListener('change', event => { const file = event.target.files[0]; if (file) { $('#fileName').textContent = file.name; $('#fileName').dataset.fileName = file.name; } });
+        $('#searchInput').addEventListener('input', event => { searchTerm = event.target.value; renderTable(); updateSelectionText(); }); $('#monthFilter').addEventListener('change', () => { activeStatus = 'all'; selectedIds.clear(); renderAll(); updateSelectionText(); });
+        $$('.status-tab').forEach(tab => tab.addEventListener('click', () => { activeStatus = tab.dataset.status; selectedIds.clear(); renderTabs(); renderTable(); updateSelectionText(); }));
+        $('#selectAll').addEventListener('change', event => { filteredExpenses().forEach(item => event.target.checked ? selectedIds.add(item.id) : selectedIds.delete(item.id)); renderTable(); updateSelectionText(); }); $('#batchApprove').addEventListener('click', batchApprove); $('#exportButton').addEventListener('click', () => exportCsv(filteredExpenses()));
+        $('#expenseTableBody').addEventListener('click', event => { const row = event.target.closest('tr[data-id]'); if (!row) return; const id = row.dataset.id; const item = state.expenses.find(expense => expense.id === id); if (!item) return; if (event.target.closest('.edit')) openModal(item); if (event.target.closest('.delete')) deleteExpense(id); if (event.target.closest('.row-check')) toggleSelected(id, event.target.checked); });
+        $('#importButton').addEventListener('click', () => $('#csvInput').click()); $('#csvInput').addEventListener('change', event => { const file = event.target.files[0]; if (file) importCsv(file); event.target.value = ''; }); $('#downloadTemplate').addEventListener('click', downloadTemplate); $('#printButton').addEventListener('click', printReport);
+        $('#themeToggle').addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; saveState(); applyTheme(); }); $('#mobileMenu').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+        $$('.nav-item').forEach(item => item.addEventListener('click', () => { $$('.nav-item').forEach(nav => nav.classList.remove('active')); item.classList.add('active'); const target = document.getElementById(item.dataset.target); if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (window.innerWidth <= 690) $('#sidebar').classList.remove('open'); }));
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#searchInput').focus(); } });
+      }
+
+      renderDate(); renderMonthOptions(); renderAll(); applyTheme(); bindEvents();
+    })();
+  </script>
+</body>
+</html>
